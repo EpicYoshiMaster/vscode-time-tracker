@@ -38,19 +38,19 @@ export class TimeTracker {
         return this._idleTime;
     }
 
+    private _storageFile: vscode.Uri;
+    public get storageFile() {
+        return this._storageFile;
+    }
+
     private _onActiveStateTick?: TTimeTrackerAction;
 
     private _tickTimer?: NodeJS.Timeout;
 
-    constructor() {
+    constructor(storageFile: vscode.Uri) {
         this._state = TimeTrackerState.Stopped;
-
-        const rootFolder = vscode.workspace.rootPath;
-
-        if (rootFolder) {
-            const filePath = path.join(rootFolder, this.dataFileName);
-            this._trackedData = this._trackedData ?? new TrackedData(filePath);
-        }
+        this._storageFile = storageFile;
+        this._trackedData = storageFile.path !== "/" ? new TrackedData(storageFile.fsPath) : undefined;
     }
 
     private startTickTimer() {
@@ -148,5 +148,12 @@ export class TimeTracker {
     public recompute(): boolean {
         this.trackedData?.recomputeTotalTime();
         return true;
+    }
+
+    public setStorageFile(storageFile: vscode.Uri) {
+        this._storageFile = storageFile;
+
+        this.stop();
+        this._trackedData = storageFile.path !== "/" ? new TrackedData(storageFile.fsPath) : undefined;
     }
 }
