@@ -44,6 +44,8 @@ Use `Ctrl+Shift+P` to execute Time Tracker commands.
 * `Time Tracker: Start` - Activate time tracking
 * `Time Tracker: Pause` - Pause time tracking
 * `Time Tracker: Stop` - Deactivate time tracking
+* `Time Tracker: Recompute` - Recompute total tracked time
+* `Time Tracker: Select Time Tracker File` - Choose active time tracker file
 
 ## **Configuration**
 

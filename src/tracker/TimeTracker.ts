@@ -6,7 +6,7 @@ import { TrackedSession } from './TrackedSession';
 import { TTimeTrackerAction } from './Types';
 
 export class TimeTracker {
-    public readonly dataFileName = '.timetracker';
+    public readonly emptyFile = "/";
     private _maxIdleTimeBeforeCloseSession: number = 120;
     set maxIdleTimeBeforeCloseSession(value: number) {
         this._maxIdleTimeBeforeCloseSession = value;
@@ -50,7 +50,7 @@ export class TimeTracker {
     constructor(storageFile: vscode.Uri) {
         this._state = TimeTrackerState.Stopped;
         this._storageFile = storageFile;
-        this._trackedData = storageFile.path !== "/" ? new TrackedData(storageFile.fsPath) : undefined;
+        this._trackedData = storageFile.path !== this.emptyFile ? new TrackedData(storageFile.fsPath) : undefined;
     }
 
     private startTickTimer() {
@@ -79,16 +79,12 @@ export class TimeTracker {
             return false;
         }
 
-        const rootFolder = vscode.workspace.rootPath;
-
-        if (!rootFolder) {
+        if (this.storageFile.path === this.emptyFile) {
             //vscode.window.showWarningMessage('A folder should be opened to store time tracking data!');
             return false;
         }
 
-        const filePath = path.join(rootFolder, this.dataFileName);
-
-        this._trackedData = this._trackedData ?? new TrackedData(filePath);
+        this._trackedData = this._trackedData ?? new TrackedData(this.storageFile.path);
         this._state = TimeTrackerState.Started;
 
         this._currentSession = new TrackedSession(true);
@@ -153,7 +149,10 @@ export class TimeTracker {
     public setStorageFile(storageFile: vscode.Uri) {
         this._storageFile = storageFile;
 
-        this.stop();
-        this._trackedData = storageFile.path !== "/" ? new TrackedData(storageFile.fsPath) : undefined;
+        if (this._currentSession && this._state !== TimeTrackerState.Stopped) {
+            this.stop();
+        }
+        
+        this._trackedData = storageFile.path !== this.emptyFile ? new TrackedData(storageFile.fsPath) : undefined;
     }
 }

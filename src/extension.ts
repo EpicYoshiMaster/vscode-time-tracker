@@ -6,7 +6,8 @@ import { TimeTracker } from './tracker/TimeTracker';
 import { TimeTrackerState } from './tracker/TimeTrackerState';
 import fs from 'fs';
 
-const tracker: TimeTracker = new TimeTracker(vscode.workspace.workspaceFolders ? vscode.Uri.file(path.join(vscode.workspace.workspaceFolders[0].uri.path, '.timetracker'))  : vscode.Uri.file(''));
+const dataFileName = '.timetracker';
+const tracker: TimeTracker = new TimeTracker(vscode.workspace.workspaceFolders ? vscode.Uri.file(path.join(vscode.workspace.workspaceFolders[0].uri.path, dataFileName))  : vscode.Uri.file(''));
 let statusBarItem: vscode.StatusBarItem;
 let fileStatusBarItem: vscode.StatusBarItem;
 let useCompactStatusPanel = false;
@@ -57,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 		vscode.commands.registerCommand(COMMAND_SELECT, async () => {
 
-			const files = await vscode.workspace.findFiles('**/.timetracker');
+			const files = await vscode.workspace.findFiles(`**/${dataFileName}`);
 
 			const currentItem: vscode.QuickPickItem[] = [
 				{ label: "Current", kind: vscode.QuickPickItemKind.Separator }, 
@@ -112,7 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
 			reactOnActions();
 		}),
 		vscode.window.onDidChangeTextEditorSelection((e) => {
-			if (path.basename(e.textEditor.document.fileName) !== tracker.dataFileName) {
+			if (path.basename(e.textEditor.document.fileName) !== dataFileName) {
 				reactOnActions();
 			}
 		})
@@ -133,8 +134,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	tracker.maxIdleTimeBeforeCloseSession = pauseAfter;
 
-	const rootFolder = vscode.workspace.rootPath;
-
 	if (autoStartTimeTracking) {
 		if (autoCreateTimeTrackingFile) {
 			if (askAboutStart) {
@@ -147,9 +146,8 @@ export function activate(context: vscode.ExtensionContext) {
 				tracker.start(updateStatusBarItem);
 			}
 		} else {
-			if (rootFolder) {
-				const filePath = path.join(rootFolder, tracker.dataFileName);
-				if (fs.existsSync(filePath)) {
+			if (tracker.storageFile.path !== tracker.emptyFile) {
+				if (fs.existsSync(tracker.storageFile.fsPath)) {
 					if (askAboutStart) {
 						vscode.window.showInformationMessage("Do you want to start time tracking?", "Yes", "No").then(value => {
 							if (value === "Yes") {
@@ -205,8 +203,15 @@ function updateStatusBarItem(timeTracker: TimeTracker) {
 function updateFileStatusBarItem(timeTracker: TimeTracker) {
 	const trackerPath = timeTracker.storageFile;
 
-	if(trackerPath.path !== "/") {
-		fileStatusBarItem.text = toDisplayPath(trackerPath);
+	if(trackerPath.path !== timeTracker.emptyFile) {
+		if(useCompactStatusPanel) {
+			fileStatusBarItem.text = '$(file) Select';
+			fileStatusBarItem.tooltip = `Select Time Tracker File   Current: ${toDisplayPath(trackerPath)}`
+		}
+		else {
+			fileStatusBarItem.text = toDisplayPath(trackerPath);
+		}
+		
 		fileStatusBarItem.command = COMMAND_SELECT;
 		fileStatusBarItem.show();
 	}
